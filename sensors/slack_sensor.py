@@ -175,6 +175,7 @@ class SlackSensor(PollingSensor):
                 'bot_id': data['bot_id'],
                 'name': data['username'],
             }
+            payload['title'] = data['attachments'][0]['title']
         else:
             user_info = self._get_user_info(user_id=data['user'])
             if(not user_info):
