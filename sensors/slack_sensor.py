@@ -133,7 +133,7 @@ class SlackSensor(PollingSensor):
         return new_last_message_timestamp
 
     def _handle_message(self, data):
-        trigger = 'slack.message'
+        trigger = 'modified_slack.message'
         event_type = data['type']
 
         if event_type not in EVENT_TYPE_WHITELIST or ('subtype' in data and data['subtype'] != 'bot_message'):
