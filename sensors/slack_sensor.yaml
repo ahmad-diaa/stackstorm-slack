@@ -5,7 +5,7 @@
   poll_interval: 15
   trigger_types:
     -
-      name: "message"
+      name: "modified_slack.message"
       description: "Trigger which indicates a new message has been posted to a channel"
       payload_schema:
         type: "object"
