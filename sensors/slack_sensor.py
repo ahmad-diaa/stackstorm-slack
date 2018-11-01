@@ -136,12 +136,11 @@ class SlackSensor(PollingSensor):
         trigger = 'slack.message'
         event_type = data['type']
 
-        if event_type not in EVENT_TYPE_WHITELIST or 'subtype' in data:
+        if event_type not in EVENT_TYPE_WHITELIST or ('subtype' in data and data['subtype'] != 'bot_message'):
             # Skip unsupported event
             return
 
         # Note: We resolve user and channel information to provide more context
-        user_info = self._get_user_info(user_id=data['user'])
         channel_info = None
         channel_id = data.get('channel', '')
         # Grabbing info based on the type of channel the message is in.
@@ -150,7 +149,7 @@ class SlackSensor(PollingSensor):
         elif channel_id.startswith('G'):
             channel_info = self._get_group_info(group_id=channel_id)
 
-        if not user_info or not channel_info:
+        if not channel_info:
             # Deleted user or channel
             return
 
@@ -161,18 +160,6 @@ class SlackSensor(PollingSensor):
             text = data['text']
 
         payload = {
-            'user': {
-                'id': user_info['id'],
-                'name': user_info['name'],
-                'first_name': user_info['profile'].get('first_name',
-                                                       'Unknown'),
-                'last_name': user_info['profile'].get('last_name',
-                                                      'Unknown'),
-                'real_name': user_info['profile'].get('real_name',
-                                                      'Unknown'),
-                'is_admin': user_info['is_admin'],
-                'is_owner': user_info['is_owner']
-            },
             'channel': {
                 'id': channel_info['id'],
                 'name': channel_info['name'],
@@ -183,7 +170,27 @@ class SlackSensor(PollingSensor):
             'timestamp_raw': data['ts'],
             'text': text
         }
-
+        if('subtype' in data and data['subtype'] == 'bot_message'):
+            payload['user'] = {
+                'bot_id': data['bot_id'],
+                'name': data['username'],
+            }
+        else:
+            user_info = self._get_user_info(user_id=data['user'])
+            if(not user_info):
+                return
+            payload['user'] = {
+                'id': user_info['id'],
+                'name': user_info['name'],
+                'first_name': user_info['profile'].get('first_name',
+                                                       'Unknown'),
+                'last_name': user_info['profile'].get('last_name',
+                                                      'Unknown'),
+                'real_name': user_info['profile'].get('real_name',
+                                                      'Unknown'),
+                'is_admin': user_info['is_admin'],
+                'is_owner': user_info['is_owner']
+            }
         self._sensor_service.dispatch(trigger=trigger, payload=payload)
 
     def _handle_message_ignore_errors(self, data):
